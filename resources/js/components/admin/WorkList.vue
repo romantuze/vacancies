@@ -1,0 +1,297 @@
+<template>
+    <header class="container header-table">
+        <a href="/admin/home" class="logo">
+            <img loading="lazy" src="/img/logo-table.svg" alt="img">
+        </a>
+        <a href="/admin-logout" class="log-off">
+            <span>Выйти из личного кабинета</span>
+            <svg class="svg">
+                <use xlink:href="/img/sprite.svg#log-off"></use>
+            </svg>
+        </a>
+    </header>
+
+        <div class="container sort-block">
+            <div class="table-tabs">
+                <a href="/admin/companies" class="table-tabs__item active">
+                    Сортировать по компаниям
+                </a>
+                <a href="/admin/vacancies" class="table-tabs__item">
+                    Сортировать по вакансиям
+                </a>
+            </div>
+            <div class="search">
+                <input type="text" placeholder="Поиск по наименованию вакансии" v-model="search_input">
+                <button class="search__btn"></button>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="company-block company-block-left">
+                <div v-if="user.logo  !== null">
+                    <div class="logo-image" :style="{ backgroundImage: 'url('+user.logo+')' }"></div>     
+                   
+                </div>
+                <div v-else>
+                    <img loading="lazy" src="/img/logo.png" alt="" width="160" height="80" style="width: 160px; height: 80px;">
+                </div>
+                <div>{{ user.name }}</div>
+            </div>
+            <div class="company-block  company-block-right" v-if="user.phone !== null">                
+                <div class="company-phone">Телефон: {{ user.phone }}</div>
+            </div>
+            <div class="clear"></div>
+            <p>&nbsp;</p>
+            <p>Счет компании: {{ user.balance }}.       
+            Валюта: {{ user.currency }}.
+            <a :href="'/admin/company/deposit/'+user.id">Пополнить счет</a>
+            </p>
+        </div>
+
+        <div class="table table-sort-vacancies">
+            <div class="container">
+                <div class="table__top table-row">
+                    <div>
+                        <span class="item-title left">Наименование вакансии</span>
+                    </div>
+                    <div>
+                        <span class="item-title show-list left" @click.stop="loadSortWorks('status')">Статус</span>
+       
+                    </div>                    
+                    <div>
+                        <span class="item-title">Расход средств</span>
+                    </div>
+                    <div>
+                        <span class="item-title left">Публикация</span>
+                    </div>
+    
+                    <div>
+                        <span class="item-title">К - во <br> кандидатов</span>
+                    </div>
+                    <div>
+                        <span class="item-title show-list left" @click.stop="loadSortWorks('city_id')">Локация</span>
+                    </div>
+                    <div>
+                        <span class="item-title show-list" @click.stop="loadSortWorks('created_at')">Создана дата</span>
+
+                    </div>
+                    <div>
+                        <span class="item-title show-list left" @click.stop="loadSortWorks('date_close')">Плановое закрытие</span>
+
+                    </div>
+                </div>
+                <div v-for="item in search_items" class="table__item table-row" :key="item.id">
+                    <div class="left">
+                        <span class="table__item--text name-chenge--show"> 
+                        <a>
+                        № {{ item.id }} {{ item.name }}
+                        </a> 
+                        <a :href="'/admin/work/'+item.id" v-if="item.status === 2 || item.status === 3">управлять кандидатами</a>
+                        <a :href="'/admin/work/export/'+item.id">
+                        скачать файл публикации
+                        </a>
+                        <a :href="'/q/'+item.slug" target="_blank" v-if="item.status === 2">
+                        ссылка на опросник
+                        </a>
+                        <a :href="'/admin/work/delete/'+item.id" target="_blank" onclick="return confirm('Вы действительно хотите удалить вакансию?')" v-if="item.status === 1">удалить вакансию</a>                        
+                    </span>
+                        
+                    </div>
+                    <div class="left">
+                        <span class="table__item--text text-blue">
+                       <span v-if="item.status == 1">Черновик</span>
+                       <span v-if="item.status == 2">В работе</span>
+                       <span v-if=" item.status == 3">Архив</span>
+                    </span>
+                    </div>
+                    <div class="left">
+                         <span class="table__item--text"  style="min-width: 120px;">
+
+                            Расход: {{ item.balance }}<br>
+                            
+                        </span>
+                    </div>
+                    <div class="left">
+                        <span class="table__item--text text-blue">                                                       
+                            <span v-if="item.pay_confirm == 1">Оплачена</span><br>
+                            <a v-if="item.pay_confirm == 0"
+                             @click="payConfirm(item.id, item.name, 1)" 
+                            style="cursor: pointer;" 
+                            >Подвердить оплату</a>                     
+                            <br>
+                            <span>Скидка: <input type="text" :value="item.sale" style="width: 40px;" 
+                            @change="saveSale($event.target.value, item.id)"></span>  
+                        </span>
+                    </div>                   
+                    
+                    <div>
+                        <span class="table__item--text">
+                            <a :href="'/admin/work/'+item.id" 
+                            v-if="item.count_candidates_approved > 0">{{ item.count_candidates_approved }}</a>
+                            <a v-else>0</a>
+                        </span>
+                    </div>
+                    <div>
+                        <span class="table__item--text">{{ item.city_id }}</span>
+                    </div>
+                    <div>
+                        <span class="table__item--text">{{ item.date_create }}</span>
+                    </div>
+                    <div>
+                        <span class="table__item--text">{{ item.date_close }}</span>
+                    </div>
+                </div>
+                <div v-intersection="loadMore" class="observer"></div>          
+            </div>
+        </div>
+</template>
+<script>
+import Swal from 'sweetalert2';    
+export default {
+    props: ['company_id'],
+    data() {
+       return {
+        items: [],
+        search_input: "",
+        user: { logo: null, name: null, phone: null },
+        current_offset: 0,
+        current_limit: 3,
+        sort: "id",
+        asc: true,
+        }
+    },
+    computed: {
+        search_items: function() {
+            if (this.search_input !== "") {
+                return this.items.filter((item) => {
+                    return item.name.toLowerCase().indexOf(this.search_input.toLowerCase()) != -1
+                });
+            } else {
+                return this.items;
+            };     
+        }
+     },
+    mounted() {
+         this.loadUser();
+         this.loadWorks();            
+    },
+    methods: {
+
+        payConfirm(id, name, pay_value) {
+            let params = {    
+                work_id: id,
+                pay_value: pay_value,
+            };              
+            Swal.fire({
+            title: 'Подтвердить оплату',
+            text: 'Вы действительно хотите подтвердить публикацию вакансии ' + name,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            cancelButtonText: 'Нет',
+            confirmButtonText: 'Да',
+            }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire(
+                'Подверждено!',
+                'Публикация вакансии подтверждена.',
+                'success'
+                );               
+                axios.post('/api/work/pay_confirm', params)
+                .then((response) => {
+                    if (response.data.msg !== undefined) {                               
+                        location.href='';
+                    } 
+                });
+            }
+            });          
+        },
+
+        saveSale(value, id) {            
+            if (value >= 0 && value < 100) {                
+            let params = {
+                work_id: id,
+                value: value,      
+            };  
+            axios.post('/api/work/sale', params)
+            .then((response) => {
+                if (response.data.msg !== undefined) {
+                    Swal.fire(response.data.msg);                        
+                }     
+            });
+            }
+        },
+
+        loadSortWorks(s) {         
+            this.current_offset = 0;
+            this.sort = s;
+            this.items = [];            
+            this.asc = !this.asc;
+            this.loadWorks();      
+        },
+
+        async loadWorks() {
+            let params = {
+                user_id: this.company_id,
+                limit: this.current_limit,
+                offset: this.current_offset,       
+                sort: this.sort,
+                asc: this.asc,           
+            };  
+
+            axios.post('/api/works_admin', params)
+            .then((response) => {
+                if (response.data !== undefined) {
+                    let old_items = [...this.items];
+                    let new_items = response.data.map((item)=>{
+                       return {
+                            id: item.id,
+                            name: item.name,
+                            company_name: item.company_name,
+                            status: item.status,
+                            slug: item.slug,
+                            city_id: item.city_id,
+                     
+                            date_close: item.date_close, 
+                            count_candidates_approved: item.count_candidates_approved,
+                            balance: item.balance,
+                            balance_admin: item.balance_admin,
+                            balance_free: item.balance_free,
+                            deposit_text: item.deposit_text,
+                            deposit_in: item.deposit_in,    
+                            currency: item.currency,
+                            sale: item.sale,
+                            pay_confirm: item.pay_confirm,
+                            date_create: item.date_create,
+                        }
+                    });
+                    this.items = old_items.concat(new_items);
+                    old_items = [];
+                    new_items = [];
+                }     
+            });
+            this.current_offset = this.current_offset + this.current_limit;  
+        },
+
+        loadUser() {
+           let id =  this.company_id;
+           if (id > 0) {
+            axios({
+              method: 'get',
+              url: '/api/users/'+id,
+            })
+            .then((response) => {
+                if (response.data !== undefined) {
+                    this.user = response.data;
+                }       
+            });
+           }
+        },
+
+        async loadMore() {         
+            this.loadWorks();  
+        }    
+    } 
+}
+</script>
